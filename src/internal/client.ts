@@ -169,6 +169,7 @@ export interface ClientOptions {
   credentialsProvider?: CredentialProvider
   s3AccelerateEndpoint?: string
   transportAgent?: http.Agent
+  maxRetries?: number
 }
 
 export type RequestOption = Partial<IRequest> & {
@@ -222,7 +223,7 @@ export class TypedClient {
   protected transportAgent: http.Agent
   private readonly clientExtensions: Extensions
 
-  constructor(params: ClientOptions) {
+  constructor(public params: ClientOptions) {
     // @ts-expect-error deprecated property
     if (params.secure !== undefined) {
       throw new Error('"secure" option deprecated, "useSSL" should be used instead')
@@ -724,7 +725,7 @@ export class TypedClient {
       reqOptions.headers.authorization = signV4(reqOptions, this.accessKey, this.secretKey, region, date, sha256sum)
     }
 
-    const response = await requestWithRetry(this.transport, reqOptions, body)
+    const response = await requestWithRetry(this.transport, reqOptions, body, this.params.maxRetries)
     if (!response.statusCode) {
       throw new Error("BUG: response doesn't have a statusCode")
     }
